@@ -7,7 +7,6 @@ import Image from "next/image";
 import Link from "next/link";
 
 import { integrations } from "@/integration.config";
-import { formatDate } from "@/utils/format-date";
 import { notFound } from "next/navigation";
 
 type Props = {
