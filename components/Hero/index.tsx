@@ -5,16 +5,23 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 const Hero = () => {
-  const router = useRouter();
-  const { data: session } = useSession();
+  const router = useRouter()
+const { data: session } = useSession()
 
-  const handleStartClick = () => {
-    if (session) {
-      router.push('/termometro');
-    } else {
-      router.push('/auth/signin');
-    }
-  };
+const handleStartClick = () => {
+  if (!session) {
+    // Usuario no ha iniciado sesión
+    router.push('/auth/signin')
+    return
+  }
+
+  const hasCompletedTutorial = localStorage.getItem('tutorialCompleted')
+  if (hasCompletedTutorial) {
+    router.push('/termometro')
+  } else {
+    router.push('/tutorial')
+  }
+};
 
   return (
     <section className="pt-35 xl:pb-5 xl:pt-40 overflow-hidden pb-20 md:pt-40">
