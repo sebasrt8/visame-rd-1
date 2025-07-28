@@ -10,7 +10,7 @@ const Hero = () => {
 
   const handleStartClick = () => {
     if (session) {
-      router.push('/tutorial;');
+      router.push('/tutorial');
     } else {
       router.push('/auth/signin');
     }
