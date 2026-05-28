@@ -39,16 +39,26 @@ model Session {
 }
 
 model User {
-  id                    String    @id @default(cuid())
+  id                    String               @id @default(cuid())
   name                  String?
-  email                 String?   @unique
+  email                 String?              @unique
   emailVerified         DateTime?
   image                 String?
   password              String?
-  passwordResetToken    String?   @unique
+  passwordResetToken    String?              @unique
   passwordResetTokenExp DateTime?
   accounts              Account[]
   sessions              Session[]
+  termometroResults     TermometroResult[]
+}
+
+model TermometroResult {
+  id        String   @id @default(cuid())
+  score     Int
+  formData  Json
+  createdAt DateTime @default(now())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model VerificationToken {

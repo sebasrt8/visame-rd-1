@@ -1,54 +1,60 @@
 // src/utils/scoreCalculator.ts
 import { sections, Question } from '../components/Termometro/Sections';
 
-/**
- * FormData: respuestas del usuario, clave=id de pregunta, valor=respuesta
- */
 export type FormData = Record<string, string>;
 
-/**
- * Calcula un puntaje de 0 a 100 basado en una matriz de riesgo experta.
- */
 export function calculateVisaScore(form: FormData): number {
   let totalWeight = 0;
   let weightedScore = 0;
 
   sections.forEach(section => {
     section.questions.forEach((q: Question) => {
-      // Si tiene condición y no se cumple, omitimos
       if (q.condition && !q.condition(form)) return;
       const answer = form[q.id];
-      // Pasamos todo el form para casos que dependen de múltiples campos
       const score = mapAnswerToScore(q.id, answer, form);
       totalWeight += q.weight;
       weightedScore += score * q.weight;
     });
   });
 
-  // Normalizamos a escala 0-100
   const average = totalWeight ? weightedScore / totalWeight : 0;
   return Math.round(average);
 }
 
-/**
- * Mapea cada respuesta a un valor de 0-100 según criterio experto.
- */
+export function calculateSectionScores(form: FormData): { title: string; score: number }[] {
+  return sections
+    .filter(section => section.questions.length > 0)
+    .map(section => {
+      let totalWeight = 0;
+      let weightedScore = 0;
+      section.questions.forEach((q: Question) => {
+        if (q.condition && !q.condition(form)) return;
+        const answer = form[q.id];
+        if (!answer) return;
+        const score = mapAnswerToScore(q.id, answer, form);
+        totalWeight += q.weight;
+        weightedScore += score * q.weight;
+      });
+      const score = totalWeight ? Math.round(weightedScore / totalWeight) : 0;
+      return { title: section.title, score };
+    })
+    .filter(s => s.score > 0);
+}
+
 function mapAnswerToScore(id: string, value: string, form: FormData): number {
   switch (id) {
-    // ==== Datos Personales ==== 
-    case 'birthDate': {
+    case 'birth': {
       const age = calculateAge(new Date(value));
       if (age < 25) return 60;
       if (age < 40) return 80;
       return 70;
     }
-    case 'civilStatus':
-      return value === 'Casado/a' ? 100 : 80;
+    case 'estadocivil':
+      if (value === 'Casado/a') return 100;
+      if (value === 'Unión Libre') return 85;
+      return 75;
     case 'nationality':
-      // RD tiene menor aprobación estadística
       return 70;
-
-    // ==== Contacto Migratorio ==== 
     case 'departureDate':
     case 'returnDate': {
       const dep = form['departureDate'] ? new Date(form['departureDate']) : null;
@@ -63,36 +69,64 @@ function mapAnswerToScore(id: string, value: string, form: FormData): number {
       return value === 'Yo' ? 90 : 80;
     case 'contactInUSA':
       return ['Familiar', 'Amigo'].includes(value) ? 100 : 70;
-
-    // ==== Información Familiar ==== 
-    case 'spouseName':
+    case 'wife':
       return value ? 100 : 0;
-    case 'hasChildren':
-      return value === 'Sí' ? 90 : 80;
-
-    // ==== Experiencia Laboral ==== 
+    case 'son':
+      return value === 'Si' ? 90 : 80;
+    case 'home':
+      return value === 'Si' ? 90 : 75;
+    case 'vehicle':
+      return value === 'Si' ? 85 : 80;
     case 'employed':
-      return value === 'Empleado' ? 100 : 70;
-
-    // ==== Información Migratoria ==== 
+      if (value === 'Empleado') return 100;
+      if (value === 'Independiente') return 80;
+      return 50;
+    case 'legalCompany':
+      return value === 'Si' ? 90 : 70;
+    case 'passport':
+      return value === 'Si' ? 100 : 30;
     case 'hasPetition':
-      return value === 'Sí' ? 50 : 100;
+      return value === 'Si' ? 50 : 100;
     case 'hasPreviousVisa':
-      return value === 'Sí' ? 100 : 80;
+      return value === 'Si' ? 100 : 80;
     case 'visaDenied':
-      return value === 'Sí' ? 30 : 100;
+      return value === 'Si' ? 30 : 100;
     case 'hasTravelHistory':
-      return value === 'Sí' ? 100 : 80;
-
-    // ==== Default: valor medio ====
+      return value === 'Si' ? 100 : 80;
+    case 'hasBeenArrested':
+      return value === 'Si' ? 10 : 100;
+    case 'deported':
+      return value === 'Si' ? 10 : 100;
+    case 'militaryService':
+      return value === 'Si' ? 90 : 80;
+    case 'lastStudie': {
+      const eduScores: Record<string, number> = {
+        'Ninguno': 40, 'Primaria': 50, 'Secundaria': 60,
+        'Técnico': 75, 'Universidad': 90, 'Maestría': 95, 'Doctorado': 100,
+      };
+      return eduScores[value] ?? 70;
+    }
+    case 'Bank':
+      return value === 'Si' ? 90 : 50;
+    case 'ammountBank':
+    case 'liquidnetworth':
+    case 'totalnetworth': {
+      const wealthScores: Record<string, number> = {
+        '0-20,000': 40, '20,001-50,000': 65, '50,001-100,000': 85, '+100,000': 100,
+      };
+      return wealthScores[value] ?? 70;
+    }
+    case 'hasinvestments':
+      return value === 'Si' ? 90 : 70;
+    case 'ilegalactivities':
+      return value === 'Si' ? 5 : 100;
+    case 'relationPEP':
+      return value === 'Si' ? 70 : 90;
     default:
       return 80;
   }
 }
 
-/**
- * Calcula la edad a partir de la fecha de nacimiento
- */
 function calculateAge(birth: Date): number {
   const diffMs = Date.now() - birth.getTime();
   const ageDt = new Date(diffMs);
