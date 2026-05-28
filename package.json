@@ -54,6 +54,7 @@
     "@tailwindcss/typography": "^0.5.16",
     "@types/bcrypt": "^5.0.1",
     "@types/node": "^20.8.8",
+    "@types/nodemailer": "^6.4.23",
     "@types/react": "19.0.10",
     "@types/react-dom": "19.0.4",
     "@types/react-modal": "^3.16.3",

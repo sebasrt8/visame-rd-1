@@ -21,6 +21,26 @@ export function calculateVisaScore(form: FormData): number {
   return Math.round(average);
 }
 
+export function calculateSectionScores(form: FormData): { title: string; score: number }[] {
+  return sections
+    .filter(section => section.questions.length > 0)
+    .map(section => {
+      let totalWeight = 0;
+      let weightedScore = 0;
+      section.questions.forEach((q: Question) => {
+        if (q.condition && !q.condition(form)) return;
+        const answer = form[q.id];
+        if (!answer) return;
+        const score = mapAnswerToScore(q.id, answer, form);
+        totalWeight += q.weight;
+        weightedScore += score * q.weight;
+      });
+      const score = totalWeight ? Math.round(weightedScore / totalWeight) : 0;
+      return { title: section.title, score };
+    })
+    .filter(s => s.score > 0);
+}
+
 function mapAnswerToScore(id: string, value: string, form: FormData): number {
   switch (id) {
     case 'birth': {
